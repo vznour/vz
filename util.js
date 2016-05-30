@@ -407,7 +407,10 @@ $scope.showSelected=function(node){
       break;
     case MENU_TYPE.CATEGORY:
     case MENU_TYPE.SUBCATEGORY:
-      $scope.docs=getRawDataForNode(node);
+        if (node.n!='CX')
+          $scope.docs=getRawDataForNode(node);
+        else
+           $scope.docs=getRawDataForAll();
       break;
     case MENU_TYPE.DOMAIN:
     case MENU_TYPE.PAGE:
