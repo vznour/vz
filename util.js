@@ -249,3 +249,208 @@ else{
   return [vrc,rrc];
 }
 
+
+//app.js
+
+app =angular.module('voc', ['treeControl','ngMaterial','angularUtils.directives.dirPagination','nvd3']);
+ app.config(function($mdThemingProvider) {
+  $mdThemingProvider.theme('default');
+});
+
+
+app.controller("vocController",["$scope","$timeout", "$mdSidenav","$element",
+  function($scope,$timeout,$mdSidenav,$element){
+  $scope.treeOptions = {
+    nodeChildren: "c",
+    dirSelectable: true,
+    injectClasses: {
+        ul: "a1",
+        li: "a2",
+        liSelected: "a7",
+        iExpanded: "a3",
+        iCollapsed: "a4",
+        iLeaf: "a5",
+        label: "a6",
+        labelSelected: "a8"
+    }
+};
+
+
+$scope.first=true;
+$scope.menu=menuData;
+$scope.more=false;
+$scope.currentPage=1;
+$scope.pageSize="5";
+$scope.reverse=false
+$scope.sortByName='rating'
+$scope.searchField='text'
+$scope.search={'text':'','url':'','browser':'','os':'','rating':''};
+$scope.searchBy=function(new_val,old_val){
+  var val=$scope.search[old_val]
+  var m ={'text':'','url':'','browser':'','os':'','rating':''};
+  m[new_val]=val;
+  $scope.search=m;
+};
+
+
+
+$scope.getRatingClass= function(rating){
+  if ( rating ==1)
+    return "rating1";
+  if( rating <4 )
+    return "rating23";
+  return "rating45";
+}
+
+$scope.toggleMenu = function() {
+  $mdSidenav('left').toggle();
+};
+
+
+
+
+
+
+
+
+$scope.data={};
+
+var gcolors =["#1f77b4", "#d62728","#ff7f0e","#2ca02c", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"];
+
+$scope.expandedNodes =[$scope.menu[0]];
+$scope.options_v = {
+            chart: {
+                type: 'multiChart',
+                height: 450,
+                margin : {
+                    top: 30,
+                    right: 60,
+                    bottom: 50,
+                    left: 70
+                },
+                color:gcolors,
+                useInteractiveGuideline: true,
+                transitionDuration: 500,
+                x: function(d){return d[0];}, 
+                y: function(d){return d[1];}, 
+
+				xAxis: { 
+                     axisLabel: 'Date', 
+                    tickFormat: function(d) {
+						                if(d){
+                            return d3.time.format('%x')(new Date(d)) ;
+                          }
+                          else 
+                            return null;
+      
+                     } 
+                 }, 
+                yAxis1: {
+                    tickFormat: function(d){
+                        return d3.format('d')(d);
+                    }
+                },
+               
+                yAxis2: {
+                    tickFormat: function(d){
+                        return d3.format(',.1f')(d);
+                    },
+                }
+            }
+        };
+
+$scope.options_r = {
+            chart: {
+                type: 'multiChart',
+                height: 450,
+                margin : {
+                    top: 30,
+                    right: 60,
+                    bottom: 50,
+                    left: 70
+                },
+                color: gcolors, 
+            
+                useInteractiveGuideline: true,
+              
+                x: function(d){return d[0];}, 
+                y: function(d){return d[1];}, 
+
+        xAxis: { 
+                     axisLabel: 'Date', 
+                    tickFormat: function(d) {
+                            if(d){
+                            return d3.time.format('%x')(new Date(d)) ;
+                          }
+                          else 
+                            return null;
+      
+                     } 
+                 }, 
+                yAxis1: {
+                    tickFormat: function(d){
+                        return d3.format(',.1f')(d);
+                    }
+                }
+               
+            }
+        };	
+$scope.showSelected=function(node){
+  $scope.node1=node;
+   $scope.docs=[];
+  switch(node.t){
+    case MENU_TYPE.MODEL_ROOT:
+    case MENU_TYPE.URL_ROOT:
+    case MENU_TYPE.OS_ROOT:
+    case MENU_TYPE.BROWSER_ROOT:
+      $scope.docs=getRawDataForAll();
+      break;
+    case MENU_TYPE.CATEGORY:
+    case MENU_TYPE.SUBCATEGORY:
+      $scope.docs=getRawDataForNode(node);
+      break;
+    case MENU_TYPE.DOMAIN:
+    case MENU_TYPE.PAGE:
+      $scope.docs=getRawDataForURL(node);
+      break;
+    case MENU_TYPE.BROWSER:
+      $scope.docs=getBrowserData(node);
+      break;
+    case MENU_TYPE.OS:
+      $scope.docs=getOSData(node);
+      break;
+  }
+
+  var data=getTrend(node);
+
+  $scope.vdata =[data[0]];
+  $scope.rdata =[data[1]];
+ 
+  
+
+  var elem=$element[0].querySelector("md-tab-content#tab-content-0");
+  elem.scrollTop=0;
+  $scope.currentPage=1;
+  if ($scope.first==false)
+     $scope.toggleMenu();
+   else $scope.first=false;
+
+};
+
+
+$timeout( function(){
+  $scope.node1= $scope.menu[0]; // getNodeForName('error',$scope.menu[0]['c']);
+
+  $scope.showSelected($scope.node1);
+},300);
+
+ }]);
+
+app.filter('trusted', ['$sce', function($sce){
+        return function(text) {
+            return $sce.trustAsHtml(text);
+        };
+    }]);
+
+
+
