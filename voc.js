@@ -199,7 +199,6 @@ function getOSData(node,f){
 }
 
 function getAllTopicData(f){
-   console.log(f);
   return getRawData3(allSentences,f);
 }
 
@@ -210,7 +209,6 @@ function getTopicData(node,f){
 
 
 function getDocs(node,formatted){
-  console.log(node);
   switch(node.t){
     case MENU_TYPE.MODEL_ROOT:
     case MENU_TYPE.URL_ROOT:
