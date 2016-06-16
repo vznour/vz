@@ -36,6 +36,13 @@ function combineDicts(src, dest){
       dest[k] = src[k];
   }
 }
+function round2(num){
+  Math.round(num * 100) / 100
+}
+
+function round1(num){
+  Math.round(num * 10) / 10
+}
 
 function getNodeForName(strNode, nodes){
   for ( var i=0;i< nodes.length;i++){
@@ -109,7 +116,7 @@ function getDoc(m,formatted){
 
     return{
     	 'text': text,'gid':d.g,'url':d.u,'os':d.o,'browser':d.b,'date':d.d,'ip':d.ip,'store':d.l,'topic':d.t,'rating':d.r,
-       'cRating':d.cr,'dRating':d.dr,'uRating':d.ur,'nps':d.n,'sentiment':d.s
+       'cRating':d.cr,'dRating':d.dr,'uRating':d.ur,'nps':d.n,'sentiment':round1(d.s)
     };
 }
 
@@ -187,6 +194,10 @@ function getDocCountVOC(node){
   return countDictKeys(modelSentences[node.i]);
 }
 
+function getDocCountURL(node){
+  return urlDocs[node.i].length;
+}
+
 function getRawDataForURL(node,f){
   return getRawData2(node, urlDocs,f);
 }
@@ -234,6 +245,48 @@ function getDocs(node,formatted){
       return getTopicData(node,formatted)
 
   }
+}
+
+
+function getVolumeData(node,total){
+  console.log(total);
+  var f=null;
+  switch(node.t){
+    case MENU_TYPE.MODEL_ROOT:
+    case MENU_TYPE.CATEGORY:
+        f= getDocCountVOC;
+        break;
+    case MENU_TYPE.OS_ROOT:
+        f =getDocCountOS;
+        break;
+    case MENU_TYPE.BROWSER_ROOT:
+       f =getDocCountBrowser;
+       break;
+    case MENU_TYPE.DOMAIN:
+    case MENU_TYPE.URL_ROOT:
+       f =getDocCountURL;
+       break;
+    case MENU_TYPE.TOPIC_ROOT:
+       f=getDocCountTopic;
+       break;
+  }
+  var len= node.c.length;
+  var result =[];
+  var c=0;
+  var p=0;
+  for(var i=0; i<len;i++){
+    c = 0;
+    p = 0;
+    if (node.t==MENU_TYPE.MODEL_ROOT && node.c[i].n=='CX')
+      c = total;
+    else
+      c = f(node.c[i]);
+      p = (c/total)*100;
+    result.push({'name':node.c[i].n,'docs':c,'p':Math.round(p * 100) / 100})
+
+  }
+  result.sort(function (a,b){ return b.docs-a.docs;});
+  return result;
 }
 
 
@@ -340,192 +393,9 @@ else{
   return [vrc,rrc];
 }
 
-
-
-app =angular.module('voc', ['treeControl','ngMaterial','ngSanitize','ngCsv','angularUtils.directives.dirPagination','nvd3']);
- app.config(function($mdThemingProvider) {
-  $mdThemingProvider.theme('default');
-});
-
-
-app.controller("vocController",["$scope","$timeout", "$mdSidenav","$element",
-  function($scope,$timeout,$mdSidenav,$element){
-  $scope.treeOptions = {
-    nodeChildren: "c",
-    dirSelectable: true,
-    injectClasses: {
-        ul: "a1",
-        li: "a2",
-        liSelected: "a7",
-        iExpanded: "a3",
-        iCollapsed: "a4",
-        iLeaf: "a5",
-        label: "a6",
-        labelSelected: "a8"
-    }
-};
-
-
-$scope.first=true;
-$scope.menu=menuData;
-$scope.more=false;
-$scope.currentPage=1;
-$scope.pageSize="5";
-$scope.reverse=false
-$scope.sortByName='rating'
-$scope.searchField='text'
-$scope.search={'text':'','url':'','browser':'','os':'','rating':''};
-$scope.searchBy=function(new_val,old_val){
-  var val=$scope.search[old_val]
-  var m ={'text':'','url':'','browser':'','os':'','rating':''};
-  m[new_val]=val;
-  $scope.search=m;
-};
-
-
-
-$scope.getRatingClass= function(rating){
-  if ( rating ==1)
-    return "rating1";
-  if( rating <4 )
-    return "rating23";
-  return "rating45";
-}
-
-$scope.toggleMenu = function() {
-  $mdSidenav('left').toggle();
-};
-
-
-
-
-
-
-
-
-$scope.data={};
-
-var gcolors =["#1f77b4", "#d62728","#ff7f0e","#2ca02c", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"];
-
-$scope.expandedNodes =[$scope.menu[0]];
-$scope.options_v = {
-            chart: {
-                type: 'multiChart',
-                height: 450,
-                margin : {
-                    top: 30,
-                    right: 60,
-                    bottom: 50,
-                    left: 70
-                },
-                color:gcolors,
-                useInteractiveGuideline: true,
-                transitionDuration: 500,
-                x: function(d){return d[0];}, 
-                y: function(d){return d[1];}, 
-
-				xAxis: { 
-                     axisLabel: 'Date', 
-                    tickFormat: function(d) {
-						                if(d){
-                            return d3.time.format('%x')(new Date(d)) ;
-                          }
-                          else 
-                            return null;
-      
-                     } 
-                 }, 
-                yAxis1: {
-                    tickFormat: function(d){
-                        return d3.format('d')(d);
-                    }
-                },
-               
-                yAxis2: {
-                    tickFormat: function(d){
-                        return d3.format(',.1f')(d);
-                    },
-                }
-            }
-        };
-
-$scope.options_r = {
-            chart: {
-                type: 'multiChart',
-                height: 450,
-                margin : {
-                    top: 30,
-                    right: 60,
-                    bottom: 50,
-                    left: 70
-                },
-                color: gcolors, 
-            
-                useInteractiveGuideline: true,
-              
-                x: function(d){return d[0];}, 
-                y: function(d){return d[1];}, 
-
-        xAxis: { 
-                     axisLabel: 'Date', 
-                    tickFormat: function(d) {
-                            if(d){
-                            return d3.time.format('%x')(new Date(d)) ;
-                          }
-                          else 
-                            return null;
-      
-                     } 
-                 }, 
-                yAxis1: {
-                    tickFormat: function(d){
-                        return d3.format(',.1f')(d);
-                    }
-                }
-               
-            }
-        };	
-$scope.showSelected=function(node){
-  $scope.node1=node;
-  $scope.docs=getDocs(node,true);
-  var data=getTrend(node);
-  $scope.vdata =[data[0]];
-  $scope.rdata =[data[1]];
- 
-  
-
-  var elem=$element[0].querySelector("md-tab-content#tab-content-0");
-  elem.scrollTop=0;
-  $scope.currentPage=1;
-  if ($scope.first==false)
-     $scope.toggleMenu();
-   else $scope.first=false;
-
-};
-
-
-$timeout( function(){
-  $scope.node1= $scope.menu[0]; // getNodeForName('error',$scope.menu[0]['c']);
-
-  $scope.showSelected($scope.node1);
-},300);
-
-
-$scope.getArray= function(){
-  return getDocs($scope.node1,false);
-}
-
- }]);
-
-app.filter('trusted', ['$sce', function($sce){
-        return function(text) {
-            return $sce.trustAsHtml(text);
-        };
-    }]);
-
-
 //app.js
 
+
 app =angular.module('voc', ['treeControl','ngMaterial','ngSanitize','ngCsv','angularUtils.directives.dirPagination','nvd3']);
  app.config(function($mdThemingProvider) {
   $mdThemingProvider.theme('default');
@@ -675,6 +545,10 @@ $scope.showSelected=function(node){
   var data=getTrend(node);
   $scope.vdata =[data[0]];
   $scope.rdata =[data[1]];
+  if ( node.c.length>0)
+    $scope.volume= getVolumeData(node,$scope.docs.length);
+  else
+    $scope.volume=[];
  
   
 
@@ -706,5 +580,3 @@ app.filter('trusted', ['$sce', function($sce){
             return $sce.trustAsHtml(text);
         };
     }]);
-
-
