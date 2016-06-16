@@ -249,7 +249,6 @@ function getDocs(node,formatted){
 
 
 function getVolumeData(node,total){
-  console.log(total);
   var f=null;
   switch(node.t){
     case MENU_TYPE.MODEL_ROOT:
